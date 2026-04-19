@@ -202,4 +202,4 @@ async function criar() {
     await carregar()
 }
 
-carregar()
+carregar();
