@@ -1,0 +1,132 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>AURA</title>
+    <link rel="stylesheet" href="style.css">
+</head>
+<body>
+    <main class="app-shell">
+        <section class="hero">
+            <div class="hero-copy-block">
+                <p class="eyebrow">Agenda inteligente</p>
+                <h1>Aura transforma caos em proximos passos claros.</h1>
+                <p class="hero-copy">
+                    O sistema analisa prioridade, impacto e urgencia para sugerir microtarefas,
+                    destacar o que precisa de atencao agora e adaptar o nivel de detalhamento.
+                </p>
+            </div>
+
+            <div class="hero-card">
+                <p class="section-label">Painel atual</p>
+                <div class="hero-metrics">
+                    <div>
+                        <strong id="metric-total">0</strong>
+                        <span>Tarefas</span>
+                    </div>
+                    <div>
+                        <strong id="metric-alerta">0</strong>
+                        <span>Em vermelho</span>
+                    </div>
+                    <div>
+                        <strong id="metric-concluidas">0</strong>
+                        <span>Concluidas</span>
+                    </div>
+                </div>
+            </div>
+        </section>
+
+        <section class="panel">
+            <div class="panel-header">
+                <div>
+                    <p class="section-label">Nova tarefa</p>
+                    <h2>Oriente a Aura</h2>
+                </div>
+            </div>
+
+            <div class="composer">
+                <div class="field field-full">
+                    <label for="titulo">Titulo</label>
+                    <input id="titulo" placeholder="Ex.: Estudar matematica para a prova">
+                </div>
+
+                <div class="field field-full">
+                    <label for="descricao">Descricao</label>
+                    <textarea id="descricao" placeholder="Contexto, objetivo ou observacoes importantes"></textarea>
+                </div>
+
+                <div class="field">
+                    <label for="categoria">Categoria</label>
+                    <select id="categoria">
+                        <option value="">Automatica</option>
+                        <option value="estudo">Estudo</option>
+                        <option value="trabalho">Trabalho</option>
+                        <option value="saude">Saude</option>
+                        <option value="geral">Geral</option>
+                    </select>
+                </div>
+
+                <div class="field">
+                    <label for="prioridade">Prioridade</label>
+                    <select id="prioridade">
+                        <option value="baixa">Baixa</option>
+                        <option value="media" selected>Media</option>
+                        <option value="alta">Alta</option>
+                    </select>
+                </div>
+
+                <div class="field">
+                    <label for="impacto">Impacto</label>
+                    <select id="impacto">
+                        <option value="1">Baixo</option>
+                        <option value="2" selected>Medio</option>
+                        <option value="3">Alto</option>
+                    </select>
+                </div>
+
+                <div class="field">
+                    <label for="urgencia">Urgencia</label>
+                    <select id="urgencia">
+                        <option value="1">Baixa</option>
+                        <option value="2" selected>Media</option>
+                        <option value="3">Alta</option>
+                    </select>
+                </div>
+
+                <div class="field">
+                    <label for="prazo">Prazo</label>
+                    <input id="prazo" type="date">
+                </div>
+
+                <div class="field">
+                    <label for="perfil">Perfil</label>
+                    <select id="perfil">
+                        <option value="">Automatico</option>
+                        <option value="simples">Simples</option>
+                        <option value="medio">Medio</option>
+                        <option value="detalhista">Detalhista</option>
+                    </select>
+                </div>
+
+                <div class="field actions">
+                    <button onclick="criar()">Adicionar tarefa</button>
+                </div>
+            </div>
+        </section>
+
+        <section class="panel">
+            <div class="panel-header">
+                <div>
+                    <p class="section-label">Visao geral</p>
+                    <h2>Tarefas criadas</h2>
+                </div>
+            </div>
+
+            <ul id="lista" class="task-list"></ul>
+        </section>
+    </main>
+
+    <script src="script.js"></script>
+</body>
+</html>
