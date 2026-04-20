@@ -4,10 +4,27 @@ from sqlalchemy.orm import relationship
 from database import Base
 
 
+class Usuario(Base):
+    __tablename__ = "usuarios"
+
+    id = Column(Integer, primary_key=True, index=True)
+    nome = Column(String, nullable=False)
+    email = Column(String, nullable=False, unique=True, index=True)
+    senha_hash = Column(String, nullable=False)
+    data_criacao = Column(String, nullable=False)
+
+    tarefas = relationship(
+        "Tarefa",
+        back_populates="usuario",
+        cascade="all, delete-orphan"
+    )
+
+
 class Tarefa(Base):
     __tablename__ = "tarefas"
 
     id = Column(Integer, primary_key=True, index=True)
+    usuario_id = Column(Integer, ForeignKey("usuarios.id"), nullable=True)
     titulo = Column(String)
     descricao = Column(String, nullable=True)
     categoria = Column(String, default="geral")
@@ -34,6 +51,7 @@ class Tarefa(Base):
         back_populates="tarefa",
         cascade="all, delete-orphan"
     )
+    usuario = relationship("Usuario", back_populates="tarefas")
 
 
 class MicroTarefa(Base):

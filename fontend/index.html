@@ -7,123 +7,180 @@
     <link rel="stylesheet" href="style.css">
 </head>
 <body>
-    <main class="app-shell">
-        <section class="hero">
-            <div class="hero-copy-block">
-                <p class="eyebrow">Agenda inteligente</p>
-                <h1>Aura transforma caos em proximos passos claros.</h1>
-                <p class="hero-copy">
-                    O sistema analisa prioridade, impacto e urgencia para sugerir microtarefas,
-                    destacar o que precisa de atencao agora e adaptar o nivel de detalhamento.
-                </p>
+    <section id="auth-screen" class="auth-shell">
+        <div class="auth-panel auth-brand-panel">
+            <img src="aura-hero.png" alt="AURA produtividade com propósito" class="auth-brand-image">
+        </div>
+
+        <div class="auth-panel auth-form-panel">
+            <div class="auth-tabs">
+                <button id="tab-login" class="auth-tab is-active" type="button">Entrar</button>
+                <button id="tab-register" class="auth-tab" type="button">Criar conta</button>
             </div>
 
-            <div class="hero-card">
-                <p class="section-label">Painel atual</p>
-                <div class="hero-metrics">
-                    <div>
-                        <strong id="metric-total">0</strong>
-                        <span>Tarefas</span>
-                    </div>
-                    <div>
-                        <strong id="metric-alerta">0</strong>
-                        <span>Em vermelho</span>
-                    </div>
-                    <div>
-                        <strong id="metric-concluidas">0</strong>
-                        <span>Concluidas</span>
-                    </div>
+            <div id="auth-feedback" class="auth-feedback"></div>
+
+            <form id="login-form" class="auth-form">
+                <div class="auth-copy">
+                    <p class="section-label">Login</p>
+                    <h1>Entre com seu e-mail e senha</h1>
+                </div>
+
+                <label for="login-email">E-mail</label>
+                <input id="login-email" type="email" placeholder="voce@exemplo.com" autocomplete="email">
+
+                <label for="login-password">Senha</label>
+                <input id="login-password" type="password" placeholder="Sua senha" autocomplete="current-password">
+                <button type="button" class="forgot-password-button">Esqueceu a senha?</button>
+
+                <button type="submit">Entrar</button>
+            </form>
+
+            <form id="register-form" class="auth-form is-hidden">
+                <div class="auth-copy">
+                    <p class="section-label">Cadastro</p>
+                    <h1>Crie sua conta</h1>
+                </div>
+
+                <label for="register-name">Nome</label>
+                <input id="register-name" type="text" placeholder="Seu nome">
+
+                <label for="register-email">E-mail</label>
+                <input id="register-email" type="email" placeholder="voce@exemplo.com" autocomplete="email">
+
+                <label for="register-password">Senha</label>
+                <input id="register-password" type="password" placeholder="Crie uma senha" autocomplete="new-password">
+
+                <button type="submit">Criar conta</button>
+            </form>
+        </div>
+    </section>
+
+    <main id="app-screen" class="app-shell is-hidden">
+        <header class="app-topbar">
+            <div class="profile-area">
+                <button id="profile-button" class="profile-button" type="button" aria-label="Abrir menu do perfil">
+                    <span id="profile-initial">A</span>
+                </button>
+                <div id="profile-menu" class="profile-menu">
+                    <p id="profile-name">Perfil AURA</p>
+                    <p id="profile-email" class="profile-email"></p>
+                    <button id="logout-button" type="button" class="logout-button">Logout</button>
                 </div>
             </div>
+        </header>
+
+        <section class="intro-grid">
+            <article class="brand-card">
+                <img src="aura-logo-card.png" alt="Logo AURA" class="brand-card-logo">
+                <div class="brand-card-copy">
+                    <strong>AURA</strong>
+                    <span>produtividade com propósito</span>
+                </div>
+            </article>
+
+            <section class="composer-card">
+                <div class="composer-header">
+                    <div>
+                        <p class="section-label">Nova tarefa</p>
+                        <h2>Oriente a aura...</h2>
+                    </div>
+                    <p class="composer-copy">Adicione suas tarefas em uma area mais objetiva e acompanhe tudo no quadro logo abaixo.</p>
+                </div>
+
+                <div class="composer compact-composer">
+                    <div class="field field-wide">
+                        <label for="titulo">Tarefa</label>
+                        <input id="titulo" placeholder="Ex.: Estudar matematica para a prova">
+                    </div>
+
+                    <div class="field field-wide">
+                        <label for="descricao">Descricao</label>
+                        <textarea id="descricao" placeholder="Contexto, objetivo ou observacoes importantes"></textarea>
+                    </div>
+
+                    <div class="field">
+                        <label for="categoria">Categoria</label>
+                        <select id="categoria">
+                            <option value="">Automatica</option>
+                            <option value="estudo">Estudo</option>
+                            <option value="trabalho">Trabalho</option>
+                            <option value="saude">Saude</option>
+                            <option value="geral">Geral</option>
+                        </select>
+                    </div>
+
+                    <div class="field">
+                        <label for="prioridade">Prioridade</label>
+                        <select id="prioridade">
+                            <option value="baixa">Baixa</option>
+                            <option value="media" selected>Media</option>
+                            <option value="alta">Alta</option>
+                        </select>
+                    </div>
+
+                    <div class="field">
+                        <label for="prazo">Prazo</label>
+                        <input id="prazo" type="date">
+                    </div>
+
+                    <div class="field actions">
+                        <button onclick="criar()">Adicionar tarefa</button>
+                    </div>
+                </div>
+            </section>
         </section>
 
-        <section class="panel">
-            <div class="panel-header">
+        <section class="board-panel">
+            <div class="board-header">
                 <div>
-                    <p class="section-label">Nova tarefa</p>
-                    <h2>Oriente a Aura</h2>
+                    <p class="section-label">Quadro</p>
+                    <h2>Suas tarefas em destaque</h2>
+                </div>
+                <div class="board-summary">
+                    <p class="board-copy" id="hero-note">Crie sua primeira tarefa para ver o ritmo da semana.</p>
+                    <div class="priority-legend">
+                        <span class="legend-item legend-red">Vermelho = urgencia alta</span>
+                        <span class="legend-item legend-yellow">Amarelo = intermediaria</span>
+                        <span class="legend-item legend-green">Verde = prioridade baixa</span>
+                    </div>
                 </div>
             </div>
 
-            <div class="composer">
-                <div class="field field-full">
-                    <label for="titulo">Titulo</label>
-                    <input id="titulo" placeholder="Ex.: Estudar matematica para a prova">
-                </div>
+            <div class="kanban-board">
+                <section class="kanban-column column-fazer">
+                    <div class="kanban-header">
+                        <div>
+                            <p class="section-label">Pendentes</p>
+                            <h3>Tarefas pendentes</h3>
+                        </div>
+                        <span class="group-counter" id="contador-fazer">0</span>
+                    </div>
+                    <ul id="lista-fazer" class="task-list"></ul>
+                </section>
 
-                <div class="field field-full">
-                    <label for="descricao">Descricao</label>
-                    <textarea id="descricao" placeholder="Contexto, objetivo ou observacoes importantes"></textarea>
-                </div>
+                <section class="kanban-column column-fazendo">
+                    <div class="kanban-header">
+                        <div>
+                            <p class="section-label">Em andamento</p>
+                            <h3>Tarefas em andamento</h3>
+                        </div>
+                        <span class="group-counter" id="contador-fazendo">0</span>
+                    </div>
+                    <ul id="lista-fazendo" class="task-list"></ul>
+                </section>
 
-                <div class="field">
-                    <label for="categoria">Categoria</label>
-                    <select id="categoria">
-                        <option value="">Automatica</option>
-                        <option value="estudo">Estudo</option>
-                        <option value="trabalho">Trabalho</option>
-                        <option value="saude">Saude</option>
-                        <option value="geral">Geral</option>
-                    </select>
-                </div>
-
-                <div class="field">
-                    <label for="prioridade">Prioridade</label>
-                    <select id="prioridade">
-                        <option value="baixa">Baixa</option>
-                        <option value="media" selected>Media</option>
-                        <option value="alta">Alta</option>
-                    </select>
-                </div>
-
-                <div class="field">
-                    <label for="impacto">Impacto</label>
-                    <select id="impacto">
-                        <option value="1">Baixo</option>
-                        <option value="2" selected>Medio</option>
-                        <option value="3">Alto</option>
-                    </select>
-                </div>
-
-                <div class="field">
-                    <label for="urgencia">Urgencia</label>
-                    <select id="urgencia">
-                        <option value="1">Baixa</option>
-                        <option value="2" selected>Media</option>
-                        <option value="3">Alta</option>
-                    </select>
-                </div>
-
-                <div class="field">
-                    <label for="prazo">Prazo</label>
-                    <input id="prazo" type="date">
-                </div>
-
-                <div class="field">
-                    <label for="perfil">Perfil</label>
-                    <select id="perfil">
-                        <option value="">Automatico</option>
-                        <option value="simples">Simples</option>
-                        <option value="medio">Medio</option>
-                        <option value="detalhista">Detalhista</option>
-                    </select>
-                </div>
-
-                <div class="field actions">
-                    <button onclick="criar()">Adicionar tarefa</button>
-                </div>
+                <section class="kanban-column column-feito">
+                    <div class="kanban-header">
+                        <div>
+                            <p class="section-label">Concluidas</p>
+                            <h3>Tarefas concluídas</h3>
+                        </div>
+                        <span class="group-counter" id="contador-feito">0</span>
+                    </div>
+                    <ul id="lista-feito" class="task-list"></ul>
+                </section>
             </div>
-        </section>
-
-        <section class="panel">
-            <div class="panel-header">
-                <div>
-                    <p class="section-label">Visao geral</p>
-                    <h2>Tarefas criadas</h2>
-                </div>
-            </div>
-
-            <ul id="lista" class="task-list"></ul>
         </section>
     </main>
 

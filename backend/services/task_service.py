@@ -7,6 +7,12 @@ from services.history_service import registrar_interacao, resumir_historico_por_
 from services.prioritization_service import calcular_cor_prioridade
 from services.profile_service import resolver_perfil
 
+STATUS_SUGERIDA = "sugerida"
+STATUS_ACEITA = "aceita"
+STATUS_REJEITADA = "rejeitada"
+STATUS_CONCLUIDA = "concluida"
+STATUS_LEGADO_PENDENTE = "pendente"
+
 
 def detectar_categoria(titulo):
     titulo_normalizado = titulo.lower()
@@ -41,18 +47,51 @@ def calcular_tempo_previsto(titulo, hora):
     return max(round(prever(entrada) + ajuste, 2), 15)
 
 
+def normalizar_status_microtarefa(status):
+    status_normalizado = (status or STATUS_SUGERIDA).lower()
+    if status_normalizado == STATUS_LEGADO_PENDENTE:
+        return STATUS_SUGERIDA
+    if status_normalizado in {STATUS_SUGERIDA, STATUS_ACEITA, STATUS_REJEITADA, STATUS_CONCLUIDA}:
+        return status_normalizado
+    return STATUS_SUGERIDA
+
+
+def resumir_microtarefas(tarefa):
+    resumo = {
+        "microtarefas_total": len(tarefa.microtarefas),
+        "microtarefas_concluidas": 0,
+        "microtarefas_aceitas": 0,
+        "microtarefas_rejeitadas": 0,
+        "microtarefas_sugeridas": 0,
+    }
+
+    for micro in tarefa.microtarefas:
+        status = normalizar_status_microtarefa(micro.status)
+        if status == STATUS_CONCLUIDA:
+            resumo["microtarefas_concluidas"] += 1
+        elif status == STATUS_ACEITA:
+            resumo["microtarefas_aceitas"] += 1
+        elif status == STATUS_REJEITADA:
+            resumo["microtarefas_rejeitadas"] += 1
+        else:
+            resumo["microtarefas_sugeridas"] += 1
+
+    return resumo
+
+
 def atualizar_progresso_tarefa(tarefa):
-    total_microtarefas = len(tarefa.microtarefas)
-    concluidas = sum(1 for micro in tarefa.microtarefas if micro.status == "concluida")
-    percentual = round((concluidas / total_microtarefas) * 100, 2) if total_microtarefas else 0
+    resumo = resumir_microtarefas(tarefa)
+    total_planejado = resumo["microtarefas_aceitas"] + resumo["microtarefas_concluidas"]
+    concluidas = resumo["microtarefas_concluidas"]
+    percentual = round((concluidas / total_planejado) * 100, 2) if total_planejado else 0
     tarefa.percentual_conclusao = percentual
 
-    if total_microtarefas and concluidas == total_microtarefas:
-        tarefa.status = "concluida"
-    elif concluidas > 0:
+    if total_planejado and concluidas == total_planejado:
+        tarefa.status = STATUS_CONCLUIDA
+    elif total_planejado:
         tarefa.status = "em_progresso"
     else:
-        tarefa.status = tarefa.status or "pendente"
+        tarefa.status = "pendente"
 
 
 def serializar_microtarefa(microtarefa):
@@ -61,7 +100,7 @@ def serializar_microtarefa(microtarefa):
         "titulo": microtarefa.titulo,
         "ordem": microtarefa.ordem,
         "duracao_estimada": microtarefa.duracao_estimada,
-        "status": microtarefa.status,
+        "status": normalizar_status_microtarefa(microtarefa.status),
         "tempo_real": microtarefa.tempo_real,
         "feedback": microtarefa.feedback,
         "data_conclusao": microtarefa.data_conclusao,
@@ -69,8 +108,8 @@ def serializar_microtarefa(microtarefa):
 
 
 def serializar_tarefa(tarefa):
+    atualizar_progresso_tarefa(tarefa)
     historico = resumir_historico_por_tarefa(tarefa)
-    concluidas = sum(1 for micro in tarefa.microtarefas if micro.status == "concluida")
 
     return {
         "id": tarefa.id,
@@ -90,10 +129,7 @@ def serializar_tarefa(tarefa):
         "tempo_real": tarefa.tempo_real or 0,
         "percentual_conclusao": tarefa.percentual_conclusao or 0,
         "origem_perfil": tarefa.origem_perfil or "manual",
-        "resumo_execucao": {
-            "microtarefas_total": len(tarefa.microtarefas),
-            "microtarefas_concluidas": concluidas,
-        },
+        "resumo_execucao": resumir_microtarefas(tarefa),
         "resumo_historico": historico,
         "microtarefas": [
             serializar_microtarefa(microtarefa)
@@ -102,20 +138,35 @@ def serializar_tarefa(tarefa):
     }
 
 
-def listar_tarefas(db):
-    tarefas = db.query(Tarefa).all()
+def listar_tarefas(db, usuario_id):
+    tarefas = db.query(Tarefa).filter(Tarefa.usuario_id == usuario_id).all()
     return [serializar_tarefa(tarefa) for tarefa in tarefas]
 
 
-def buscar_tarefa(db, tarefa_id):
-    return db.query(Tarefa).filter(Tarefa.id == tarefa_id).first()
+def buscar_tarefa(db, tarefa_id, usuario_id):
+    return db.query(Tarefa).filter(Tarefa.id == tarefa_id, Tarefa.usuario_id == usuario_id).first()
 
 
-def buscar_microtarefa(db, microtarefa_id):
-    return db.query(MicroTarefa).filter(MicroTarefa.id == microtarefa_id).first()
+def buscar_microtarefa(db, microtarefa_id, usuario_id):
+    return (
+        db.query(MicroTarefa)
+        .join(Tarefa, MicroTarefa.tarefa_id == Tarefa.id)
+        .filter(MicroTarefa.id == microtarefa_id, Tarefa.usuario_id == usuario_id)
+        .first()
+    )
 
 
-def criar_tarefa(db, data):
+def deletar_tarefa(db, tarefa_id, usuario_id):
+    tarefa = buscar_tarefa(db, tarefa_id, usuario_id)
+    if not tarefa:
+        return False
+
+    db.delete(tarefa)
+    db.commit()
+    return True
+
+
+def criar_tarefa(db, data, usuario_id):
     titulo = (data.get("titulo") or "").strip()
     if not titulo:
         raise ValueError("O titulo da tarefa e obrigatorio")
@@ -130,6 +181,7 @@ def criar_tarefa(db, data):
     cor_prioridade = calcular_cor_prioridade(prioridade, urgencia, impacto, data.get("prazo"))
 
     tarefa = Tarefa(
+        usuario_id=usuario_id,
         titulo=titulo,
         descricao=data.get("descricao"),
         categoria=categoria,
@@ -165,8 +217,8 @@ def criar_tarefa(db, data):
     return serializar_tarefa(tarefa)
 
 
-def atualizar_tarefa(db, tarefa_id, data):
-    tarefa = buscar_tarefa(db, tarefa_id)
+def atualizar_tarefa(db, tarefa_id, data, usuario_id):
+    tarefa = buscar_tarefa(db, tarefa_id, usuario_id)
     if not tarefa:
         return None
 
@@ -180,6 +232,13 @@ def atualizar_tarefa(db, tarefa_id, data):
         tarefa.urgencia = max(1, min(int(data["urgencia"]), 3))
     if "status" in data:
         tarefa.status = data["status"]
+        if tarefa.status == STATUS_CONCLUIDA:
+            for microtarefa in tarefa.microtarefas:
+                if normalizar_status_microtarefa(microtarefa.status) != STATUS_REJEITADA:
+                    microtarefa.status = STATUS_CONCLUIDA
+                    microtarefa.data_conclusao = datetime.datetime.now().isoformat(timespec="seconds")
+                    if not microtarefa.tempo_real:
+                        microtarefa.tempo_real = microtarefa.duracao_estimada or 0
 
     tarefa.cor_prioridade = calcular_cor_prioridade(
         tarefa.prioridade,
@@ -187,29 +246,35 @@ def atualizar_tarefa(db, tarefa_id, data):
         tarefa.impacto,
         tarefa.prazo,
     )
+    tarefa.tempo_real = sum(item.tempo_real or 0 for item in tarefa.microtarefas)
+    atualizar_progresso_tarefa(tarefa)
     registrar_interacao(db, tarefa.id, "tarefa_atualizada", origem="usuario")
     db.commit()
     db.refresh(tarefa)
     return serializar_tarefa(tarefa)
 
 
-def atualizar_microtarefa(db, microtarefa_id, data):
-    microtarefa = buscar_microtarefa(db, microtarefa_id)
+def atualizar_microtarefa(db, microtarefa_id, data, usuario_id):
+    microtarefa = buscar_microtarefa(db, microtarefa_id, usuario_id)
     if not microtarefa:
         return None
 
-    novo_status = data.get("status", microtarefa.status)
+    novo_status = normalizar_status_microtarefa(data.get("status", microtarefa.status))
     microtarefa.status = novo_status
     microtarefa.feedback = data.get("feedback", microtarefa.feedback)
     microtarefa.tempo_real = float(data.get("tempo_real", microtarefa.tempo_real or 0))
 
-    if novo_status == "concluida":
+    if novo_status == STATUS_CONCLUIDA:
         microtarefa.data_conclusao = datetime.datetime.now().isoformat(timespec="seconds")
         acao = "microtarefa_concluida"
-    elif novo_status == "ignorada":
-        acao = "microtarefa_ignorada"
     else:
-        acao = "microtarefa_atualizada"
+        microtarefa.data_conclusao = None
+        if novo_status == STATUS_ACEITA:
+            acao = "sugestao_aceita"
+        elif novo_status == STATUS_REJEITADA:
+            acao = "sugestao_rejeitada"
+        else:
+            acao = "microtarefa_atualizada"
 
     tarefa = microtarefa.tarefa
     tarefa.tempo_real = sum(item.tempo_real or 0 for item in tarefa.microtarefas)

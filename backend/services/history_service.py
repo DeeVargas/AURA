@@ -20,10 +20,14 @@ def resumir_historico_por_tarefa(tarefa):
     sugestoes_aceitas = 0
     sugestoes_rejeitadas = 0
 
-    for historico in tarefa.historicos:
-        if historico.acao in {"microtarefa_concluida", "sugestao_aceita"}:
+    for microtarefa in tarefa.microtarefas:
+        status = (microtarefa.status or "sugerida").lower()
+        if status == "pendente":
+            status = "sugerida"
+
+        if status in {"aceita", "concluida"}:
             sugestoes_aceitas += 1
-        if historico.acao in {"microtarefa_ignorada", "sugestao_rejeitada"}:
+        elif status == "rejeitada":
             sugestoes_rejeitadas += 1
 
     return {

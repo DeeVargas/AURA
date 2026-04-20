@@ -30,7 +30,14 @@ def initialize_database():
 
     inspector = inspect(engine)
     with engine.begin() as connection:
+        _ensure_columns(connection, inspector, "usuarios", {
+            "nome": "VARCHAR",
+            "email": "VARCHAR",
+            "senha_hash": "VARCHAR",
+            "data_criacao": "VARCHAR",
+        })
         _ensure_columns(connection, inspector, "tarefas", {
+            "usuario_id": "INTEGER",
             "descricao": "TEXT",
             "categoria": "VARCHAR",
             "prioridade": "VARCHAR",

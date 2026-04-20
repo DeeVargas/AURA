@@ -99,7 +99,7 @@ def gerar_microtarefas(titulo, categoria, perfil_detalhamento, tempo_previsto):
             titulo=f"{passo}: {titulo}",
             ordem=indice,
             duracao_estimada=duracao_por_bloco,
-            status="pendente",
+            status="sugerida",
         )
         for indice, passo in enumerate(passos, start=1)
     ]
