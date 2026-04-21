@@ -9,14 +9,15 @@ def _normalizar_nivel(valor, fallback):
 
 def calcular_cor_prioridade(prioridade, urgencia, impacto, prazo):
     prioridade_normalizada = (prioridade or "media").lower()
+    if prioridade_normalizada == "baixa":
+        return "verde"
+
     urgencia_nivel = _normalizar_nivel(urgencia, 2)
     impacto_nivel = _normalizar_nivel(impacto, 2)
 
     score = urgencia_nivel + impacto_nivel
     if prioridade_normalizada == "alta":
         score += 1
-    elif prioridade_normalizada == "baixa":
-        score -= 1
 
     if prazo:
         score += 1

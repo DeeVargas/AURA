@@ -160,7 +160,6 @@ function criarLinhaMeta(tarefa) {
     linha.className = "task-meta"
     linha.appendChild(criarBadge(`Categoria: ${tarefa.categoria ?? "geral"}`))
     linha.appendChild(criarBadge(`Prioridade: ${tarefa.prioridade ?? "media"}`))
-    linha.appendChild(criarBadge(`Perfil: ${tarefa.perfil_detalhamento ?? "medio"}`))
     if (tarefa.prazo) {
         linha.appendChild(criarBadge(`Prazo: ${tarefa.prazo}`))
     }
@@ -179,7 +178,7 @@ function criarCabecalhoTarefa(tarefa) {
     blocoTitulo.appendChild(titulo)
 
     const resumo = document.createElement("p")
-    resumo.textContent = `${tarefa.tempo_previsto ?? 0} min previstos • ${tarefa.percentual_conclusao ?? 0}% concluido`
+    resumo.textContent = `${tarefa.percentual_conclusao ?? 0}% concluido`
     blocoTitulo.appendChild(resumo)
 
     cabecalho.appendChild(blocoTitulo)
@@ -189,6 +188,61 @@ function criarCabecalhoTarefa(tarefa) {
     ladoDireito.appendChild(criarBadge(tarefa.cor_prioridade ?? "amarelo", `${classeCor(tarefa.cor_prioridade)} badge-pill`))
     cabecalho.appendChild(ladoDireito)
     return cabecalho
+}
+
+async function atualizarPrazoTarefa(tarefa, prazo) {
+    const resposta = await fetch(`${API_URL}/tarefas/${tarefa.id}`, {
+        method: "PATCH",
+        headers: cabecalhosApi(),
+        body: JSON.stringify({prazo})
+    })
+
+    if (!resposta.ok) {
+        window.alert("Nao foi possivel atualizar o prazo da tarefa.")
+        return false
+    }
+
+    await recarregarMantendoScroll()
+    return true
+}
+
+function criarEditorPrazo(tarefa) {
+    const form = document.createElement("form")
+    form.className = "task-deadline-editor"
+
+    const label = document.createElement("label")
+    label.htmlFor = `prazo-tarefa-${tarefa.id}`
+    label.textContent = "Alterar prazo"
+    form.appendChild(label)
+
+    const campos = document.createElement("div")
+    campos.className = "task-deadline-fields"
+
+    const input = document.createElement("input")
+    input.id = `prazo-tarefa-${tarefa.id}`
+    input.type = "date"
+    input.value = tarefa.prazo ?? ""
+    campos.appendChild(input)
+
+    const botaoSalvar = criarBotaoAcao("Salvar prazo", "ghost-button action-update-deadline", async () => {
+        await atualizarPrazoTarefa(tarefa, input.value)
+    })
+    botaoSalvar.type = "submit"
+    campos.appendChild(botaoSalvar)
+
+    const botaoLimpar = criarBotaoAcao("Remover prazo", "ghost-button", async () => {
+        input.value = ""
+        await atualizarPrazoTarefa(tarefa, "")
+    })
+    campos.appendChild(botaoLimpar)
+
+    form.appendChild(campos)
+    form.onsubmit = async event => {
+        event.preventDefault()
+        await atualizarPrazoTarefa(tarefa, input.value)
+    }
+
+    return form
 }
 
 function criarBarraProgresso(tarefa) {
@@ -354,8 +408,10 @@ function renderizarTarefa(tarefa) {
 
     const historico = document.createElement("p")
     historico.className = "history-note"
-    historico.textContent = `Aceitas: ${tarefa.resumo_historico.sugestoes_aceitas} • Rejeitadas: ${tarefa.resumo_historico.sugestoes_rejeitadas} • Perfil: ${tarefa.origem_perfil}`
+    historico.textContent = `Aceitas: ${tarefa.resumo_historico.sugestoes_aceitas} - Rejeitadas: ${tarefa.resumo_historico.sugestoes_rejeitadas}`
     li.appendChild(historico)
+
+    li.appendChild(criarEditorPrazo(tarefa))
 
     if (tarefa.microtarefas?.some(micro => normalizarStatusMicro(micro.status) !== STATUS_REJEITADA)) {
         li.appendChild(renderizarMicrotarefas(tarefa))

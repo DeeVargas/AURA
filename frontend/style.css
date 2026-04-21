@@ -659,6 +659,29 @@ button:hover {
     font-size: 0.88rem;
 }
 
+.task-deadline-editor {
+    display: flex;
+    flex-direction: column;
+    gap: 6px;
+    margin-bottom: 12px;
+}
+
+.task-deadline-fields {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 8px;
+    align-items: center;
+}
+
+.task-deadline-fields input {
+    flex: 1 1 170px;
+}
+
+.action-update-deadline {
+    background: rgba(67, 194, 124, 0.16);
+    color: #1c8c53;
+}
+
 .micro-section {
     margin-top: 10px;
 }
