@@ -113,6 +113,70 @@ function criarBadge(texto, classeExtra = "") {
     return badge
 }
 
+function esconderPainelIA() {
+    const panel = document.getElementById("ai-assist-panel")
+    const text = document.getElementById("ai-assist-text")
+    const list = document.getElementById("ai-assist-microtasks")
+    panel.classList.add("is-hidden")
+    text.textContent = ""
+    list.innerHTML = ""
+}
+
+function mostrarPainelIA(sugestao, microtasks = []) {
+    const panel = document.getElementById("ai-assist-panel")
+    const title = document.getElementById("ai-assist-title")
+    const text = document.getElementById("ai-assist-text")
+    const list = document.getElementById("ai-assist-microtasks")
+
+    title.textContent = "Sugestao da AURA"
+    text.textContent = sugestao
+    list.innerHTML = ""
+
+    microtasks.slice(0, 3).forEach(item => {
+        const li = document.createElement("li")
+        li.textContent = item.titulo
+        list.appendChild(li)
+    })
+
+    panel.classList.remove("is-hidden")
+}
+
+async function solicitarSugestaoAI(tarefaId) {
+    const resposta = await fetch(`${API_URL}/api/ai/suggest`, {
+        method: "POST",
+        headers: cabecalhosApi(),
+        body: JSON.stringify({tarefa_id: tarefaId})
+    })
+    if (!resposta.ok) {
+        return null
+    }
+    return resposta.json()
+}
+
+async function solicitarMicrotasksAI(tarefaId) {
+    const resposta = await fetch(`${API_URL}/api/ai/microtasks`, {
+        method: "POST",
+        headers: cabecalhosApi(),
+        body: JSON.stringify({tarefa_id: tarefaId})
+    })
+    if (!resposta.ok) {
+        return null
+    }
+    return resposta.json()
+}
+
+async function atualizarMemoriaAI(tarefaId, evento, observacao = "") {
+    await fetch(`${API_URL}/api/ai/update-memory`, {
+        method: "POST",
+        headers: cabecalhosApi(),
+        body: JSON.stringify({
+            tarefa_id: tarefaId,
+            evento,
+            observacao
+        })
+    })
+}
+
 async function recarregarMantendoScroll() {
     const posicaoScroll = window.scrollY
     await carregar()
@@ -130,6 +194,8 @@ async function concluirTarefa(tarefa) {
         window.alert("Nao foi possivel concluir a tarefa.")
         return
     }
+
+    await atualizarMemoriaAI(tarefa.id, "tarefa_concluida", "Conclusao manual da tarefa")
 
     await recarregarMantendoScroll()
 }
@@ -186,8 +252,42 @@ function criarCabecalhoTarefa(tarefa) {
     const ladoDireito = document.createElement("div")
     ladoDireito.className = "task-head-actions"
     ladoDireito.appendChild(criarBadge(tarefa.cor_prioridade ?? "amarelo", `${classeCor(tarefa.cor_prioridade)} badge-pill`))
+
+    // AI badge placeholder (will be populated asynchronously)
+    const aiBadge = criarBadge("AURA: ...", "ai-badge badge-pill")
+    aiBadge.style.minWidth = "92px"
+    ladoDireito.appendChild(aiBadge)
+    // Fire-and-forget update of AI badge
+    updateAIBadge(tarefa, aiBadge)
     cabecalho.appendChild(ladoDireito)
     return cabecalho
+}
+
+
+async function updateAIBadge(tarefa, badgeElement) {
+    try {
+        const resposta = await solicitarSugestaoAI(tarefa.id)
+        if (!resposta) {
+            badgeElement.textContent = "AURA: -"
+            return
+        }
+
+        const risco = resposta.risco_atraso || "medio"
+        const confianca = resposta.confianca != null ? Math.round(resposta.confianca * 100) : null
+        const texto = `AURA: ${risco.toUpperCase()}${confianca ? ` (${confianca}%)` : ""}`
+        badgeElement.textContent = texto
+
+        // color mapping for quick visual
+        if (risco === "alto") {
+            badgeElement.className = `badge ai-badge tone-vermelho badge-pill`
+        } else if (risco === "medio") {
+            badgeElement.className = `badge ai-badge tone-amarelo badge-pill`
+        } else {
+            badgeElement.className = `badge ai-badge tone-verde badge-pill`
+        }
+    } catch (err) {
+        badgeElement.textContent = "AURA: -"
+    }
 }
 
 async function atualizarPrazoTarefa(tarefa, prazo) {
@@ -281,7 +381,7 @@ function criarBarraProgresso(tarefa) {
 }
 
 async function atualizarMicrotarefa(micro, status, feedback, tempoReal = micro.tempo_real ?? 0) {
-    await fetch(`${API_URL}/microtarefas/${micro.id}`, {
+    const resposta = await fetch(`${API_URL}/microtarefas/${micro.id}`, {
         method: "PATCH",
         headers: cabecalhosApi(),
         body: JSON.stringify({
@@ -290,6 +390,17 @@ async function atualizarMicrotarefa(micro, status, feedback, tempoReal = micro.t
             tempo_real: tempoReal
         })
     })
+
+    if (!resposta.ok) {
+        window.alert("Nao foi possivel atualizar a microtarefa.")
+        return
+    }
+
+    const tarefaAtualizada = await resposta.json()
+    if (status === STATUS_CONCLUIDA && tarefaAtualizada?.id) {
+        await atualizarMemoriaAI(tarefaAtualizada.id, "microtarefa_concluida", feedback || "Microtarefa concluida")
+    }
+
     await recarregarMantendoScroll()
 }
 
@@ -312,17 +423,17 @@ function criarAcoesMicrotarefa(micro) {
             await atualizarMicrotarefa(micro, STATUS_ACEITA, "Sugestao aceita pelo usuario")
         }))
         acoes.appendChild(criarBotaoAcao("Rejeitar", "ghost-button action-reject", async () => {
-            await atualizarMicrotarefa(micro, STATUS_REJEITADA, "Sugestao rejeitada pelo usuario", 0)
+            await atualizarMicrotarefa(micro, STATUS_REJEITADA, "Sugestao rejeitada pelo usuário", 0)
         }))
         return acoes
     }
 
     if (status === STATUS_ACEITA) {
         acoes.appendChild(criarBotaoAcao("Concluir", "ghost-button action-complete", async () => {
-            await atualizarMicrotarefa(micro, STATUS_CONCLUIDA, "Microtarefa concluida pelo usuario", micro.duracao_estimada ?? 0)
+            await atualizarMicrotarefa(micro, STATUS_CONCLUIDA, "Microtarefa concluída pelo usuário", micro.duracao_estimada ?? 0)
         }))
         acoes.appendChild(criarBotaoAcao("Rejeitar", "ghost-button action-reject", async () => {
-            await atualizarMicrotarefa(micro, STATUS_REJEITADA, "Microtarefa removida do plano pelo usuario", 0)
+            await atualizarMicrotarefa(micro, STATUS_REJEITADA, "Microtarefa removida do plano pelo usuário", 0)
         }))
         return acoes
     }
@@ -346,7 +457,7 @@ function renderizarMicrotarefas(tarefa) {
 
     const subtitulo = document.createElement("p")
     subtitulo.className = "micro-heading"
-    subtitulo.textContent = "Sugestoes de microtarefas"
+    subtitulo.textContent = "Sugestões de microtarefas"
     topo.appendChild(subtitulo)
 
     const dica = document.createElement("span")
@@ -606,6 +717,27 @@ async function criar() {
     if (!resposta.ok) {
         window.alert("Nao foi possivel criar a tarefa.")
         return
+    }
+
+    const tarefaCriada = await resposta.json()
+
+    let suggestion = null
+    let microtasks = null
+    try {
+        ;[suggestion, microtasks] = await Promise.all([
+            solicitarSugestaoAI(tarefaCriada.id),
+            solicitarMicrotasksAI(tarefaCriada.id)
+        ])
+    } catch (error) {
+        suggestion = null
+        microtasks = null
+    }
+
+    if (suggestion) {
+        const frase = `Prioridade sugerida: ${suggestion.sugestao_prioridade} | Risco de atraso: ${suggestion.risco_atraso} (${Math.round((suggestion.confianca || 0) * 100)}% de confianca). ${suggestion.justificativa}`
+        mostrarPainelIA(frase, microtasks?.sugestoes_microtarefas || [])
+    } else {
+        esconderPainelIA()
     }
 
     document.getElementById("titulo").value = ""

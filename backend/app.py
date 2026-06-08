@@ -3,6 +3,11 @@ from flask_cors import CORS
 
 from database import SessionLocal, initialize_database
 from services.auth_service import autenticar_usuario, criar_usuario
+from services.ai_service import (
+    atualizar_memoria_usuario,
+    sugerir_microtarefas,
+    sugerir_prioridade_e_risco,
+)
 from services.task_service import (
     atualizar_microtarefa,
     atualizar_tarefa,
@@ -156,6 +161,57 @@ def rota_atualizar_microtarefa(microtarefa_id):
     if not resposta:
         db.close()
         return jsonify({"erro": "Microtarefa nao encontrada"}), 404
+
+    db.close()
+    return jsonify(resposta)
+
+
+@app.route("/api/ai/suggest", methods=["POST"])
+def rota_ai_suggest():
+    usuario_id, erro = validar_usuario()
+    if erro:
+        return erro
+
+    db = SessionLocal()
+    try:
+        resposta = sugerir_prioridade_e_risco(db, request.json or {}, usuario_id)
+    except ValueError as exc:
+        db.close()
+        return jsonify({"erro": str(exc)}), 400
+
+    db.close()
+    return jsonify(resposta)
+
+
+@app.route("/api/ai/microtasks", methods=["POST"])
+def rota_ai_microtasks():
+    usuario_id, erro = validar_usuario()
+    if erro:
+        return erro
+
+    db = SessionLocal()
+    try:
+        resposta = sugerir_microtarefas(db, request.json or {}, usuario_id)
+    except ValueError as exc:
+        db.close()
+        return jsonify({"erro": str(exc)}), 400
+
+    db.close()
+    return jsonify(resposta)
+
+
+@app.route("/api/ai/update-memory", methods=["POST"])
+def rota_ai_update_memory():
+    usuario_id, erro = validar_usuario()
+    if erro:
+        return erro
+
+    db = SessionLocal()
+    try:
+        resposta = atualizar_memoria_usuario(db, request.json or {}, usuario_id)
+    except ValueError as exc:
+        db.close()
+        return jsonify({"erro": str(exc)}), 400
 
     db.close()
     return jsonify(resposta)
