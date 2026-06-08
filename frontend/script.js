@@ -358,7 +358,7 @@ function criarBarraProgresso(tarefa) {
     if (aceitas + concluidas === 0) {
         label.textContent = "Nenhuma microtarefa aceita ainda"
     } else {
-        label.textContent = `${concluidas}/${aceitas + concluidas} microtarefas em execucao concluidas`
+        label.textContent = `${concluidas}/${aceitas + concluidas} microtarefas em execução concluídas`
     }
     wrapper.appendChild(label)
 
@@ -398,7 +398,7 @@ async function atualizarMicrotarefa(micro, status, feedback, tempoReal = micro.t
 
     const tarefaAtualizada = await resposta.json()
     if (status === STATUS_CONCLUIDA && tarefaAtualizada?.id) {
-        await atualizarMemoriaAI(tarefaAtualizada.id, "microtarefa_concluida", feedback || "Microtarefa concluida")
+        await atualizarMemoriaAI(tarefaAtualizada.id, "microtarefa_concluida", feedback || "Microtarefa concluída")
     }
 
     await recarregarMantendoScroll()
@@ -420,10 +420,10 @@ function criarAcoesMicrotarefa(micro) {
 
     if (status === STATUS_SUGERIDA) {
         acoes.appendChild(criarBotaoAcao("Aceitar", "ghost-button action-accept", async () => {
-            await atualizarMicrotarefa(micro, STATUS_ACEITA, "Sugestao aceita pelo usuario")
+            await atualizarMicrotarefa(micro, STATUS_ACEITA, "Sugestão aceita pelo usuário")
         }))
         acoes.appendChild(criarBotaoAcao("Rejeitar", "ghost-button action-reject", async () => {
-            await atualizarMicrotarefa(micro, STATUS_REJEITADA, "Sugestao rejeitada pelo usuário", 0)
+            await atualizarMicrotarefa(micro, STATUS_REJEITADA, "Sugestão rejeitada pelo usuário", 0)
         }))
         return acoes
     }
